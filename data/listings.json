@@ -1,0 +1,46 @@
+[
+  {
+    "status": "approved",
+    "images": [
+      "https://images.unsplash.com/photo-1549399542-7e3f8b79c341"
+    ],
+    "price": 135000,
+    "isVerifiedPro": false,
+    "userId": "guest",
+    "category": "Electronics",
+    "isEmergency247": false,
+    "district": "Colombo",
+    "date": "2026-09-14",
+    "image": "https://images.unsplash.com/photo-1549399542-7e3f8b79c341",
+    "title": "iPhone 13 128GB Blue",
+    "pricingType": "fixed",
+    "phone": "0771234567",
+    "description": "Good condition phone",
+    "location": "Colombo",
+    "views": 0,
+    "isFeatured": false,
+    "id": "1789392935233"
+  },
+  {
+    "description": "First owner, petrol hybrid, genuine mileage with records",
+    "isEmergency247": false,
+    "price": 7800000,
+    "district": "Gampaha",
+    "status": "approved",
+    "images": [
+      "https://images.unsplash.com/photo-1549399542-7e3f8b79c341"
+    ],
+    "category": "Vehicles",
+    "pricingType": "fixed",
+    "isFeatured": false,
+    "userId": "guest",
+    "isVerifiedPro": false,
+    "date": "2026-09-14",
+    "id": "ad-1789393015865-vezel",
+    "views": 0,
+    "phone": "0779998888",
+    "title": "Honda Vezel 2016 Orange",
+    "image": "https://images.unsplash.com/photo-1549399542-7e3f8b79c341",
+    "location": "Gampaha"
+  }
+]
