@@ -128,7 +128,7 @@ export const AdminHeroAdsManager: React.FC<AdminHeroAdsManagerProps> = ({
       if (onToast) {
         onToast(
           modeToSave === 'default'
-            ? 'Hero set to Default ("Find Anything in Sri Lanka")'
+            ? 'Hero set to Default ("Buy & Sell Everything in Sri Lanka")'
             : modeToSave === 'rotate'
             ? `Hero rotation enabled (${intervalToSave}s per slide)!`
             : 'Hero set to Custom Ads only!',
@@ -278,7 +278,7 @@ export const AdminHeroAdsManager: React.FC<AdminHeroAdsManagerProps> = ({
             </div>
             <h4 className="text-base font-bold text-gray-900">Keep Original Hero</h4>
             <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-              Displays "Find Anything in Sri Lanka" marketplace welcome by default. No ads rotate unless enabled.
+              Displays "Buy & Sell Everything in Sri Lanka" marketplace welcome by default. No ads rotate unless enabled.
             </p>
             <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-100 text-[11px] font-bold text-gray-700">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />

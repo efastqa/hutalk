@@ -195,9 +195,9 @@ export const HeroAdBanner: React.FC<HeroAdBannerProps> = ({
                 as="h1"
                 size="hero"
                 theme="dark"
-                primaryText="Find Anything in"
+                primaryText="Buy & Sell Everything in"
                 accentText={[
-                  'Sri Lanka 🇱🇰',
+                  'Sri Lanka',
                   'Colombo & 25 Districts',
                   'Vehicles & Motors 🚗',
                   'Homes & Land Plots 🏡',

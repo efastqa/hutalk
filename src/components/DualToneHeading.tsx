@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles } from 'lucide-react';
+import flagImg from '../assets/sri-lanka-flag.png';
 
 export type DualToneSize = 'hero' | 'xl' | 'lg' | 'md' | 'sm';
 export type DualToneTheme = 'dark' | 'light';
@@ -159,6 +160,47 @@ export const DualToneHeading: React.FC<DualToneHeadingProps> = ({
   const colors = ACCENT_COLOR_MAP[accentColor] || ACCENT_COLOR_MAP.orange;
   const sizeConfig = SIZE_STYLES[size] || SIZE_STYLES.lg;
 
+  // Helper to render accent content, replacing "Sri Lanka" or "🇱🇰" with the graphic flag matching the attached image
+  const renderAccentContent = (word: string) => {
+    if (/Sri Lanka/i.test(word)) {
+      const clean = word.replace(/🇱🇰/g, '').trim();
+      return (
+        <span className="inline-flex items-center align-middle whitespace-nowrap">
+          <span>{clean}</span>
+          <img
+            src={flagImg}
+            alt="Sri Lanka Flag"
+            className="inline-block ml-2 sm:ml-2.5 h-[0.84em] w-auto aspect-[143/102] object-contain select-none align-middle -translate-y-[0.03em] drop-shadow-sm"
+            draggable={false}
+          />
+        </span>
+      );
+    }
+
+    if (word.includes('🇱🇰')) {
+      const parts = word.split('🇱🇰');
+      return (
+        <span className="inline-flex items-center align-middle">
+          {parts.map((part, idx) => (
+            <React.Fragment key={idx}>
+              {part}
+              {idx < parts.length - 1 && (
+                <img
+                  src={flagImg}
+                  alt="Sri Lanka Flag"
+                  className="inline-block mx-1.5 h-[0.84em] w-auto aspect-[143/102] object-contain select-none align-middle -translate-y-[0.03em] drop-shadow-sm"
+                  draggable={false}
+                />
+              )}
+            </React.Fragment>
+          ))}
+        </span>
+      );
+    }
+
+    return word;
+  };
+
   // Auto-rotate through words if array has > 1 items and animationType is 'rotate' or 'wave'
   useEffect(() => {
     if (words.length <= 1 || animationType === 'typewriter') return;
@@ -281,7 +323,7 @@ export const DualToneHeading: React.FC<DualToneHeadingProps> = ({
                   }}
                   className={`inline-block ${accentToneColor} font-black`}
                 >
-                  {currentAccentWord}
+                  {renderAccentContent(currentAccentWord)}
                 </motion.span>
               </AnimatePresence>
 
@@ -316,7 +358,7 @@ export const DualToneHeading: React.FC<DualToneHeadingProps> = ({
                 theme === 'dark' ? colors.shimmerGradientDark : colors.shimmerGradientLight
               } bg-clip-text text-transparent animate-pulse`}
             >
-              {currentAccentWord}
+              {renderAccentContent(currentAccentWord)}
             </span>
           ) : animationType === 'wave' ? (
             <span className={`inline-flex ${accentToneColor} font-black`}>
@@ -351,7 +393,7 @@ export const DualToneHeading: React.FC<DualToneHeadingProps> = ({
               }}
               className={`inline-block ${accentToneColor} font-black`}
             >
-              {currentAccentWord}
+              {renderAccentContent(currentAccentWord)}
             </motion.span>
           )}
         </span>
