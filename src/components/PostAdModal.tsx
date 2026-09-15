@@ -17,7 +17,8 @@ import {
   Info,
   Images,
   CheckCircle2,
-  Check
+  Check,
+  Clock
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -436,19 +437,54 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {submittedResult ? (
-          /* Submission Confirmation & Edit Guide */
+          /* Submission Confirmation & Review Notice */
           <div className="py-2 space-y-6 animate-in fade-in duration-300">
-            <div className="text-center space-y-2.5">
-              <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-200/80 shadow-xs">
-                <CheckCircle2 className="w-9 h-9" />
+            {submittedResult.listing?.status === 'approved' ? (
+              <div className="text-center space-y-2.5">
+                <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-200/80 shadow-xs">
+                  <CheckCircle2 className="w-9 h-9" />
+                </div>
+                <h3 className="text-2xl font-black text-gray-900 tracking-tight">
+                  Advertisement Published Live!
+                </h3>
+                <p className="text-sm text-gray-600 max-w-md mx-auto">
+                  <strong className="text-gray-900 font-semibold">"{submittedResult.title}"</strong> is now live on HUTA Marketplace.
+                </p>
               </div>
-              <h3 className="text-2xl font-black text-gray-900 tracking-tight">
-                Advertisement Submitted!
-              </h3>
-              <p className="text-sm text-gray-600 max-w-md mx-auto">
-                <strong className="text-gray-900 font-semibold">"{submittedResult.title}"</strong> has been saved and is ready for buyers.
-              </p>
-            </div>
+            ) : (
+              <div className="text-center space-y-2.5">
+                <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-200/80 shadow-xs">
+                  <Clock className="w-9 h-9" />
+                </div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-bold uppercase tracking-wider">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+                  <span>Awaiting Admin Review</span>
+                </div>
+                <h3 className="text-2xl font-black text-gray-900 tracking-tight">
+                  Submitted for Admin Approval
+                </h3>
+                <p className="text-sm text-gray-600 max-w-md mx-auto">
+                  <strong className="text-gray-900 font-semibold">"{submittedResult.title}"</strong> has been received and will post to the website once approved by an administrator.
+                </p>
+              </div>
+            )}
+
+            {/* Admin Moderation Notice */}
+            {submittedResult.listing?.status !== 'approved' && (
+              <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-4 text-xs text-amber-900 space-y-2">
+                <div className="flex items-center gap-2 font-bold text-amber-900">
+                  <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>Website Safety & Verification Guarantee</span>
+                </div>
+                <p className="text-amber-800 leading-relaxed text-[11px]">
+                  All ads and services are verified by our team for accurate pricing, valid photos, and correct categorization before being posted to the live website.
+                </p>
+                <div className="flex items-center justify-between pt-1 border-t border-amber-200/60 font-semibold text-[11px] text-amber-900">
+                  <span>Current Status: <strong className="text-amber-800">Pending Review</strong></span>
+                  <span>Avg. Approval: <strong>15–30 mins</strong></span>
+                </div>
+              </div>
+            )}
 
             {/* How to edit your ad or price anytime */}
             <div className="bg-gradient-to-br from-orange-50/90 via-amber-50/60 to-orange-50/90 border border-orange-200/80 rounded-2xl p-5 space-y-3.5 shadow-xs">

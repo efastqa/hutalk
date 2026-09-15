@@ -107,7 +107,7 @@ interface AdminConfig {
 function getAdminConfig(): { password: string; autoApprove: boolean } {
   const result = {
     password: process.env.ADMIN_PASSWORD || 'admin123',
-    autoApprove: true, // Default: live publishing enabled so visitor ads are active immediately
+    autoApprove: false, // Default: manual admin review required for all ads and services
   };
   if (fs.existsSync(ADMIN_CONFIG_FILE)) {
     try {
@@ -582,7 +582,7 @@ async function startServer() {
       image: finalImage,
       images: finalImages,
       description: finalDescription,
-      status: (adminCfg.autoApprove || (req.body.status === 'approved') || (req.body.isAdminLoggedIn)) ? 'approved' : 'pending',
+      status: (adminCfg.autoApprove || Boolean(req.body.isAdminLoggedIn)) ? 'approved' : 'pending',
       isFeatured: Boolean(req.body.isFeatured),
       date: new Date().toISOString().split('T')[0],
       userId: userId ? String(userId) : 'guest',

@@ -224,8 +224,10 @@ export const api = {
   },
 
   async createListing(data: Partial<Listing>): Promise<Listing> {
-    const adminConfig = await this.getAdminConfig().catch(() => ({ autoApprove: true }));
-    const autoApprove = adminConfig.autoApprove !== undefined ? adminConfig.autoApprove : true;
+    const adminConfig = await this.getAdminConfig().catch(() => ({ autoApprove: false }));
+    const autoApprove = adminConfig.autoApprove !== undefined ? Boolean(adminConfig.autoApprove) : false;
+    const isAdmin = this.isAdminLoggedIn();
+    const initialStatus = (isAdmin || autoApprove) ? 'approved' : 'pending';
 
     const id = data.id || `ad-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const now = new Date().toISOString();
@@ -245,7 +247,7 @@ export const api = {
       description: String(data.description || '').trim(),
       image: data.image || (data.images && data.images[0]) || 'https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?auto=format&fit=crop&w=800&q=80',
       images: data.images && data.images.length > 0 ? data.images : [data.image || 'https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?auto=format&fit=crop&w=800&q=80'],
-      status: data.status || (autoApprove ? 'approved' : 'pending'),
+      status: initialStatus,
       isFeatured: Boolean(data.isFeatured),
       views: Number(data.views) || 0,
       isVerifiedPro: Boolean(data.isVerifiedPro),
@@ -277,7 +279,10 @@ export const api = {
       const res = await fetch(`${API_BASE}/listings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newListing),
+        body: JSON.stringify({
+          ...newListing,
+          isAdminLoggedIn: isAdmin,
+        }),
       });
       if (res.ok) {
         const saved = await res.json();
@@ -439,12 +444,12 @@ export const api = {
       if (snap.exists()) {
         const data = snap.data();
         return {
-          autoApprove: data.autoApprove !== undefined ? Boolean(data.autoApprove) : true,
+          autoApprove: data.autoApprove !== undefined ? Boolean(data.autoApprove) : false,
           password: data.password || '520765',
         };
       } else {
         // Initialize default in Firestore
-        const defaultCfg = { autoApprove: true, password: '520765', updatedAt: new Date().toISOString() };
+        const defaultCfg = { autoApprove: false, password: '520765', updatedAt: new Date().toISOString() };
         await setDoc(docRef, defaultCfg);
         return defaultCfg;
       }
@@ -457,7 +462,7 @@ export const api = {
         // ignore
       }
     }
-    return { autoApprove: true, password: '520765' };
+    return { autoApprove: false, password: '520765' };
   },
 
   async adminLogin(password: string): Promise<{ success: boolean; role: string }> {
