@@ -36,6 +36,7 @@ import {
 import { formatLKR } from './ListingsSection';
 import { api } from '../services/api';
 import { AdminHeroAdsManager } from './AdminHeroAdsManager';
+import { AdminReachAnalytics } from './AdminReachAnalytics';
 
 const compressBannerImage = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -135,7 +136,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onToggleHeroAd,
   onDeleteHeroAd,
 }) => {
-  const [filterTab, setFilterTab] = useState<'all' | 'pending' | 'featured' | 'services' | 'spotlight' | 'hero_ads'>('all');
+  const [filterTab, setFilterTab] = useState<'all' | 'pending' | 'featured' | 'services' | 'spotlight' | 'hero_ads' | 'reach_analytics'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('all');
   const [showMonetizationGuide, setShowMonetizationGuide] = useState(true);
@@ -286,6 +287,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const featured = listings.filter((l) => l.isFeatured).length;
   const servicesCount = listings.filter((l) => l.category === 'Services').length;
   const verifiedProsCount = listings.filter((l) => l.category === 'Services' && l.isVerifiedPro).length;
+  const totalViews = listings.reduce((acc, curr) => acc + (Number(curr.views) || 0), 0);
+  const totalWhatsapp = listings.reduce((acc, curr) => acc + (Number(curr.whatsappClicks) || 0), 0);
+  const totalPhone = listings.reduce((acc, curr) => acc + (Number(curr.phoneClicks) || 0), 0);
+  const totalCustomerLeads = totalWhatsapp + totalPhone;
 
   const filteredListings = listings.filter((item) => {
     if (filterTab === 'pending' && item.status !== 'pending') return false;
@@ -1020,7 +1025,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       </div>
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-4 sm:gap-6">
         <div
           onClick={() => setFilterTab('all')}
           className={`p-6 rounded-2xl border transition-all cursor-pointer ${
@@ -1035,6 +1040,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
           <div className="text-3xl font-extrabold text-[#111217]">{total}</div>
           <p className="text-xs text-gray-400 mt-1">Across all categories & districts</p>
+        </div>
+
+        <div
+          id="admin-metric-reach-analytics"
+          onClick={() => setFilterTab('reach_analytics')}
+          className={`p-6 rounded-2xl border transition-all cursor-pointer ${
+            filterTab === 'reach_analytics'
+              ? 'bg-white border-emerald-500 shadow-lg -translate-y-1 ring-2 ring-emerald-500/20'
+              : 'bg-white border-emerald-200/80 hover:border-emerald-400'
+          }`}
+        >
+          <div className="flex items-center justify-between text-emerald-600 mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider">Customer Reach</span>
+            <TrendingUp className="w-5 h-5 text-emerald-500" />
+          </div>
+          <div className="text-3xl font-extrabold text-emerald-600">{totalViews.toLocaleString()}</div>
+          <p className="text-xs text-gray-500 mt-1 font-medium">
+            {totalCustomerLeads} inquiries • Click analytics
+          </p>
         </div>
 
         <div
@@ -1304,6 +1328,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <Megaphone className="w-3.5 h-3.5" />
               <span>Hero Ads & Banners ({heroAds.length})</span>
             </button>
+            <button
+              id="admin-filter-reach-analytics-tab"
+              type="button"
+              onClick={() => setFilterTab('reach_analytics')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                filterTab === 'reach_analytics'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/60'
+              }`}
+            >
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span>Customer Reach & Analytics ({totalViews.toLocaleString()} views)</span>
+            </button>
           </div>
 
           {filterTab === 'spotlight' && (
@@ -1358,7 +1395,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
 
         {/* Content Section */}
-        {filterTab === 'hero_ads' ? (
+        {filterTab === 'reach_analytics' ? (
+          <div className="p-4 sm:p-6">
+            <AdminReachAnalytics
+              listings={listings}
+              heroAds={heroAds}
+              onSelectListing={onSelectListing}
+              onToggleFeature={onToggleFeature}
+            />
+          </div>
+        ) : filterTab === 'hero_ads' ? (
           <div className="p-4 sm:p-6">
             <AdminHeroAdsManager
               heroAds={heroAds}
@@ -1520,13 +1566,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <th className="py-3.5 px-4 font-bold">Location</th>
                 <th className="py-3.5 px-4 font-bold">Price</th>
                 <th className="py-3.5 px-4 font-bold">Status</th>
+                <th className="py-3.5 px-4 font-bold">Reach & Views</th>
                 <th className="py-3.5 px-4 font-bold text-right">Admin Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredListings.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-gray-400">
+                  <td colSpan={7} className="py-12 text-center text-gray-400">
                     No advertisements in this category.
                   </td>
                 </tr>
@@ -1585,9 +1632,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       </div>
                     </td>
 
+                    {/* Reach & Views */}
+                    <td className="py-3 px-4 whitespace-nowrap">
+                      <div className="flex flex-col gap-0.5">
+                        <div className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-900">
+                          <Eye className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>{(Number(item.views) || 0).toLocaleString()} views</span>
+                        </div>
+                        {((Number(item.whatsappClicks) || 0) > 0 || (Number(item.phoneClicks) || 0) > 0) ? (
+                          <div className="inline-flex items-center gap-1 text-[11px] text-emerald-700 font-medium">
+                            <span>{(Number(item.whatsappClicks) || 0) + (Number(item.phoneClicks) || 0)} buyer leads</span>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-gray-400">0 leads</span>
+                        )}
+                      </div>
+                    </td>
+
                     {/* Actions */}
                     <td className="py-3 px-4 text-right whitespace-nowrap">
                       <div className="inline-flex items-center gap-1.5">
+                        {/* View Option - Inspect ad as seen by customers */}
+                        <button
+                          type="button"
+                          onClick={() => onSelectListing(item)}
+                          title="View advertisement (Customer View Modal)"
+                          className="inline-flex items-center gap-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold py-1.5 px-2.5 rounded-lg transition-colors border border-blue-200 cursor-pointer shadow-xs"
+                        >
+                          <Eye className="w-3.5 h-3.5 text-blue-600" />
+                          <span>View</span>
+                        </button>
+
                         {item.status === 'pending' ? (
                           <>
                             <button

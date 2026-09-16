@@ -380,18 +380,60 @@ export default function App() {
 
   // Listing Selection (Ad Detail)
   const handleSelectListing = async (listing: Listing) => {
-    setSelectedListing(listing);
-    // Fetch fresh details (which also increments views count on server)
+    // Optimistic view increment for instant feedback
+    const currentViews = Number(listing.views) || 0;
+    const optimisticViews = currentViews + 1;
+    const optimisticListing = { ...listing, views: optimisticViews };
+    setSelectedListing(optimisticListing);
+
+    setListings((prev) =>
+      prev.map((item) => (item.id === listing.id ? { ...item, views: optimisticViews } : item))
+    );
+
+    // Persist view to Firestore & backend server
     try {
-      const fresh = await api.getListing(listing.id);
-      setSelectedListing(fresh);
-      // Update in local list too
-      setListings((prev) =>
-        prev.map((item) => (item.id === fresh.id ? fresh : item))
-      );
+      const res = await api.incrementView(listing.id);
+      if (res && typeof res.views === 'number') {
+        setSelectedListing((curr) => (curr && curr.id === listing.id ? { ...curr, views: res.views } : curr));
+        setListings((prev) =>
+          prev.map((item) => (item.id === listing.id ? { ...item, views: res.views } : item))
+        );
+      }
     } catch {
       // ignore view error
     }
+  };
+
+  // Lead Reach Tracking (WhatsApp & Phone Actions)
+  const handleRecordListingAction = (actionType: 'whatsapp' | 'phone' | 'share') => {
+    if (!selectedListing) return;
+    const targetId = selectedListing.id;
+
+    setSelectedListing((curr) => {
+      if (!curr) return null;
+      if (actionType === 'whatsapp') {
+        return { ...curr, whatsappClicks: (Number(curr.whatsappClicks) || 0) + 1 };
+      } else if (actionType === 'phone') {
+        return { ...curr, phoneClicks: (Number(curr.phoneClicks) || 0) + 1 };
+      }
+      return curr;
+    });
+
+    setListings((prev) =>
+      prev.map((item) => {
+        if (item.id === targetId) {
+          if (actionType === 'whatsapp') {
+            return { ...item, whatsappClicks: (Number(item.whatsappClicks) || 0) + 1 };
+          } else if (actionType === 'phone') {
+            return { ...item, phoneClicks: (Number(item.phoneClicks) || 0) + 1 };
+          }
+        }
+        return item;
+      })
+    );
+
+    // Call API in background
+    api.recordListingAction(targetId, actionType).catch(() => {});
   };
 
   // Post / Edit Ad
@@ -917,6 +959,7 @@ export default function App() {
           setChatTargetListing(listing);
           setIsChatOpen(true);
         }}
+        onRecordAction={handleRecordListingAction}
       />
 
       {/* Compare Floating Bottom Action Bar */}

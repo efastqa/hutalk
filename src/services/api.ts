@@ -387,13 +387,58 @@ export const api = {
   },
 
   async incrementView(id: string): Promise<{ views: number }> {
+    let views = 1;
     try {
-      const current = await this.getListingById(id);
-      const views = (current.views || 0) + 1;
-      await updateDoc(doc(db, 'listings', id), { views });
-      return { views };
+      const docRef = doc(db, 'listings', id);
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const current = snap.data() as Listing;
+        views = (Number(current.views) || 0) + 1;
+        await updateDoc(docRef, { views });
+      }
+    } catch (fsErr) {
+      console.warn('Firestore incrementView error:', fsErr);
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/listings/${id}/view`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.views) views = data.views;
+      }
     } catch {
-      return { views: 1 };
+      // Standalone
+    }
+
+    return { views };
+  },
+
+  async recordListingAction(id: string, actionType: 'whatsapp' | 'phone' | 'share'): Promise<void> {
+    try {
+      const docRef = doc(db, 'listings', id);
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const current = snap.data() as Listing;
+        if (actionType === 'whatsapp') {
+          const count = (Number(current.whatsappClicks) || 0) + 1;
+          await updateDoc(docRef, { whatsappClicks: count });
+        } else if (actionType === 'phone') {
+          const count = (Number(current.phoneClicks) || 0) + 1;
+          await updateDoc(docRef, { phoneClicks: count });
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    try {
+      await fetch(`${API_BASE}/listings/${id}/action`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actionType }),
+      });
+    } catch {
+      // ignore
     }
   },
 

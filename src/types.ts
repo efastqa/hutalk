@@ -16,6 +16,8 @@ export interface Listing {
   updatedAt?: string;
   userId: string;
   views: number;
+  whatsappClicks?: number;
+  phoneClicks?: number;
   serviceTrade?: string;
   pricingType?: 'fixed' | 'starting_at' | 'hourly' | 'quote';
   serviceArea?: string;

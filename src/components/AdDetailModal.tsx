@@ -24,6 +24,7 @@ import {
   Download,
   Facebook,
   Check,
+  TrendingUp,
 } from 'lucide-react';
 import { formatLKR } from './ListingsSection';
 import { downloadImage } from '../utils/downloadHelper';
@@ -45,6 +46,7 @@ interface AdDetailModalProps {
   onToggleCompare?: (listing: Listing) => void;
   onRequestOwnerEdit?: (listing: Listing) => void;
   onApproveListing?: (id: string) => void;
+  onRecordAction?: (actionType: 'whatsapp' | 'phone' | 'share') => void;
 }
 
 export const AdDetailModal: React.FC<AdDetailModalProps> = ({
@@ -62,6 +64,7 @@ export const AdDetailModal: React.FC<AdDetailModalProps> = ({
   onToggleCompare,
   onRequestOwnerEdit,
   onApproveListing,
+  onRecordAction,
 }) => {
   if (!listing) return null;
 
@@ -412,8 +415,14 @@ export const AdDetailModal: React.FC<AdDetailModalProps> = ({
                 </span>
                 <span className="inline-flex items-center gap-1 bg-gray-100 px-2.5 py-1 rounded-md font-medium">
                   <Eye className="w-3.5 h-3.5 text-gray-500" />
-                  {listing.views} views
+                  {listing.views || 0} views
                 </span>
+                {isAdminLoggedIn && (
+                  <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-md font-medium text-xs">
+                    <TrendingUp className="w-3 h-3 text-blue-500" />
+                    <span>{(listing.whatsappClicks || 0) + (listing.phoneClicks || 0)} Leads</span>
+                  </span>
+                )}
               </div>
 
               {/* Description */}
@@ -435,7 +444,11 @@ export const AdDetailModal: React.FC<AdDetailModalProps> = ({
                 </p>
                 <div className="text-lg font-bold text-gray-900 mt-0.5 tracking-wide flex items-center justify-center gap-2">
                   <Phone className="w-4 h-4 text-[#FF5A36]" />
-                  <a href={`tel:${listing.phone}`} className="hover:underline text-gray-900">
+                  <a
+                    href={`tel:${listing.phone}`}
+                    onClick={() => onRecordAction?.('phone')}
+                    className="hover:underline text-gray-900"
+                  >
                     {listing.phone}
                   </a>
                 </div>
@@ -443,6 +456,7 @@ export const AdDetailModal: React.FC<AdDetailModalProps> = ({
                 <div className="grid grid-cols-2 gap-2 mt-3">
                   <a
                     href={`tel:${listing.phone}`}
+                    onClick={() => onRecordAction?.('phone')}
                     className="flex items-center justify-center gap-1.5 bg-[#181920] hover:bg-black text-white text-xs font-bold py-2.5 px-3 rounded-lg shadow-sm transition-all"
                   >
                     <Phone className="w-3.5 h-3.5" />
@@ -452,6 +466,7 @@ export const AdDetailModal: React.FC<AdDetailModalProps> = ({
                     href={whatsappUrl}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={() => onRecordAction?.('whatsapp')}
                     className="flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#1DA851] text-white text-xs font-bold py-2.5 px-3 rounded-lg shadow-sm transition-all"
                   >
                     <MessageCircle className="w-3.5 h-3.5" />

@@ -30,6 +30,8 @@ interface Listing {
   date: string;
   userId: string;
   views: number;
+  whatsappClicks?: number;
+  phoneClicks?: number;
   serviceTrade?: string;
   pricingType?: 'fixed' | 'starting_at' | 'hourly' | 'quote';
   serviceArea?: string;
@@ -536,6 +538,35 @@ async function startServer() {
     res.json(item);
   });
 
+  // POST /api/listings/:id/view - Customer view count increment
+  app.post('/api/listings/:id/view', (req, res) => {
+    const item = listingsCache.find(l => l.id === req.params.id);
+    if (!item) {
+      return res.status(404).json({ error: 'Listing not found' });
+    }
+    item.views = (Number(item.views) || 0) + 1;
+    saveStoredListings(listingsCache);
+    persistListingToFirestore(item);
+    res.json({ views: item.views });
+  });
+
+  // POST /api/listings/:id/action - Customer lead reach tracking (whatsapp, phone)
+  app.post('/api/listings/:id/action', (req, res) => {
+    const { actionType } = req.body;
+    const item = listingsCache.find(l => l.id === req.params.id);
+    if (!item) {
+      return res.status(404).json({ error: 'Listing not found' });
+    }
+    if (actionType === 'whatsapp') {
+      item.whatsappClicks = (Number(item.whatsappClicks) || 0) + 1;
+    } else if (actionType === 'phone') {
+      item.phoneClicks = (Number(item.phoneClicks) || 0) + 1;
+    }
+    saveStoredListings(listingsCache);
+    persistListingToFirestore(item);
+    res.json({ success: true, item });
+  });
+
   // POST /api/listings
   app.post('/api/listings', (req, res) => {
     const {
@@ -701,6 +732,8 @@ async function startServer() {
       serviceArea: serviceArea !== undefined ? String(serviceArea).trim() : current.serviceArea,
       isVerifiedPro: isVerifiedPro !== undefined ? Boolean(isVerifiedPro) : current.isVerifiedPro,
       isEmergency247: isEmergency247 !== undefined ? Boolean(isEmergency247) : current.isEmergency247,
+      whatsappClicks: req.body.whatsappClicks !== undefined ? Number(req.body.whatsappClicks) : current.whatsappClicks,
+      phoneClicks: req.body.phoneClicks !== undefined ? Number(req.body.phoneClicks) : current.phoneClicks,
     };
 
     saveStoredListings(listingsCache);
