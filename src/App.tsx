@@ -35,10 +35,32 @@ export default function App() {
   // Data State
   const [listings, setListings] = useState<Listing[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
-  const [heroAds, setHeroAds] = useState<HeroAd[]>([]);
-  const [heroSettings, setHeroSettings] = useState<HeroAdSettings>({
-    mode: 'default',
-    rotationIntervalSeconds: 6,
+  const [heroAds, setHeroAds] = useState<HeroAd[]>(() => {
+    try {
+      const cached = localStorage.getItem('huta_hero_ads_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed.ads) && parsed.ads.length > 0) return parsed.ads;
+      }
+    } catch {
+      // ignore
+    }
+    return [];
+  });
+  const [heroSettings, setHeroSettings] = useState<HeroAdSettings>(() => {
+    try {
+      const cached = localStorage.getItem('huta_hero_ads_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.settings) return parsed.settings;
+      }
+    } catch {
+      // ignore
+    }
+    return {
+      mode: 'default',
+      rotationIntervalSeconds: 6,
+    };
   });
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [favorites, setFavorites] = useState<string[]>([]);

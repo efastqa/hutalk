@@ -40,7 +40,7 @@ const compressHeroImage = (file: File): Promise<string> => {
       img.onerror = reject;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const maxDim = 1200;
+        const maxDim = 960;
         let { width, height } = img;
         if (width > maxDim || height > maxDim) {
           if (width > height) {
@@ -59,7 +59,7 @@ const compressHeroImage = (file: File): Promise<string> => {
           return;
         }
         ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.82));
+        resolve(canvas.toDataURL('image/jpeg', 0.70));
       };
       img.src = e.target?.result as string;
     };

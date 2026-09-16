@@ -1134,27 +1134,58 @@ For quick inquiries, call or send a message via WhatsApp!`;
   },
 
   // -------------------------------------------------------------
-  // Hero Banner Ads & Promotional Settings (Shared Firestore)
+  // Hero Banner Ads & Promotional Settings (Shared Firestore + Server Sync)
   // -------------------------------------------------------------
 
   async getHeroAds(): Promise<{ settings: HeroAdSettings; ads: HeroAd[] }> {
+    // 1. Try Cloud Firestore first
     try {
       const docRef = doc(db, 'hero_ads', 'main');
       const snap = await getDoc(docRef);
       if (snap.exists()) {
-        return snap.data() as { settings: HeroAdSettings; ads: HeroAd[] };
+        const data = snap.data() as { settings: HeroAdSettings; ads: HeroAd[] };
+        if (data && Array.isArray(data.ads) && data.ads.length > 0) {
+          try {
+            localStorage.setItem('huta_hero_ads_cache', JSON.stringify(data));
+          } catch {
+            // ignore
+          }
+          return data;
+        }
       }
-    } catch {
-      // fallback
+    } catch (err) {
+      console.warn('[HeroAds] Firestore read warning, falling back:', err);
     }
 
+    // 2. Try Server API fallback
     try {
       const res = await fetch(`${API_BASE}/hero-ads`);
       if (res.ok) {
-        return res.json();
+        const data = await res.json();
+        if (data && Array.isArray(data.ads) && data.ads.length > 0) {
+          try {
+            localStorage.setItem('huta_hero_ads_cache', JSON.stringify(data));
+          } catch {
+            // ignore
+          }
+          return data;
+        }
       }
     } catch {
       // Standalone
+    }
+
+    // 3. Try LocalStorage cached data
+    try {
+      const cached = localStorage.getItem('huta_hero_ads_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && Array.isArray(parsed.ads) && parsed.ads.length > 0) {
+          return parsed;
+        }
+      }
+    } catch {
+      // ignore
     }
 
     const defaultHero = {
@@ -1192,23 +1223,49 @@ For quick inquiries, call or send a message via WhatsApp!`;
       ],
     };
 
-    try {
-      await setDoc(doc(db, 'hero_ads', 'main'), defaultHero);
-    } catch {
-      // ignore
-    }
-
     return defaultHero;
   },
 
   async updateHeroAdSettings(settings: Partial<HeroAdSettings>): Promise<HeroAdSettings> {
     const current = await this.getHeroAds();
-    const updated = { ...current.settings, ...settings };
+    const updated: HeroAdSettings = {
+      ...current.settings,
+      ...settings,
+    };
+
+    // Update LocalStorage cache immediately
     try {
-      await setDoc(doc(db, 'hero_ads', 'main'), { settings: updated }, { merge: true });
+      localStorage.setItem(
+        'huta_hero_ads_cache',
+        JSON.stringify({ settings: updated, ads: current.ads })
+      );
     } catch {
       // ignore
     }
+
+    // Persist to Cloud Firestore with sanitization
+    try {
+      const cleanSettings = sanitizeForFirestore(updated);
+      await setDoc(
+        doc(db, 'hero_ads', 'main'),
+        { settings: cleanSettings, updatedAt: new Date().toISOString() },
+        { merge: true }
+      );
+    } catch (err) {
+      console.warn('[HeroAds] Firestore settings update warning:', err);
+    }
+
+    // Sync to Server API
+    try {
+      await fetch(`${API_BASE}/admin/hero-ads/settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
+      });
+    } catch {
+      // ignore
+    }
+
     return updated;
   },
 
@@ -1230,23 +1287,82 @@ For quick inquiries, call or send a message via WhatsApp!`;
     };
 
     const updatedAds = [newAd, ...current.ads];
+
+    // 1. Immediately store in local cache so page refresh never loses the ad
     try {
-      await setDoc(doc(db, 'hero_ads', 'main'), { ads: updatedAds }, { merge: true });
+      localStorage.setItem(
+        'huta_hero_ads_cache',
+        JSON.stringify({ settings: current.settings, ads: updatedAds })
+      );
     } catch {
       // ignore
     }
+
+    // 2. Persist to Cloud Firestore with sanitized fields (no undefined properties)
+    try {
+      const cleanAds = sanitizeForFirestore(updatedAds);
+      await setDoc(
+        doc(db, 'hero_ads', 'main'),
+        { ads: cleanAds, updatedAt: new Date().toISOString() },
+        { merge: true }
+      );
+    } catch (err) {
+      console.warn('[HeroAds] Firestore create warning:', err);
+    }
+
+    // 3. Persist to Node Server API & local JSON file
+    try {
+      await fetch(`${API_BASE}/admin/hero-ads`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newAd),
+      });
+    } catch {
+      // ignore
+    }
+
     return newAd;
   },
 
   async updateHeroAd(id: string, data: Partial<HeroAd>): Promise<HeroAd> {
     const current = await this.getHeroAds();
     const updatedAds = current.ads.map((a) => (a.id === id ? { ...a, ...data } : a));
+    const targetAd = updatedAds.find((a) => a.id === id) || (data as HeroAd);
+
+    // 1. Immediately update LocalStorage cache
     try {
-      await setDoc(doc(db, 'hero_ads', 'main'), { ads: updatedAds }, { merge: true });
+      localStorage.setItem(
+        'huta_hero_ads_cache',
+        JSON.stringify({ settings: current.settings, ads: updatedAds })
+      );
     } catch {
       // ignore
     }
-    return updatedAds.find((a) => a.id === id) || (data as HeroAd);
+
+    // 2. Persist to Cloud Firestore
+    try {
+      const cleanAds = sanitizeForFirestore(updatedAds);
+      await setDoc(
+        doc(db, 'hero_ads', 'main'),
+        { ads: cleanAds, updatedAt: new Date().toISOString() },
+        { merge: true }
+      );
+    } catch (err) {
+      console.warn('[HeroAds] Firestore update warning:', err);
+    }
+
+    // 3. Persist to Server API
+    try {
+      await fetch(`${API_BASE}/admin/hero-ads/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    } catch {
+      // ignore
+    }
+
+    return targetAd;
   },
 
   async toggleHeroAd(id: string): Promise<HeroAd> {
@@ -1259,11 +1375,38 @@ For quick inquiries, call or send a message via WhatsApp!`;
   async deleteHeroAd(id: string): Promise<{ success: boolean }> {
     const current = await this.getHeroAds();
     const updatedAds = current.ads.filter((a) => a.id !== id);
+
+    // 1. Immediately update LocalStorage cache
     try {
-      await setDoc(doc(db, 'hero_ads', 'main'), { ads: updatedAds }, { merge: true });
+      localStorage.setItem(
+        'huta_hero_ads_cache',
+        JSON.stringify({ settings: current.settings, ads: updatedAds })
+      );
     } catch {
       // ignore
     }
+
+    // 2. Persist to Cloud Firestore
+    try {
+      const cleanAds = sanitizeForFirestore(updatedAds);
+      await setDoc(
+        doc(db, 'hero_ads', 'main'),
+        { ads: cleanAds, updatedAt: new Date().toISOString() },
+        { merge: true }
+      );
+    } catch (err) {
+      console.warn('[HeroAds] Firestore delete warning:', err);
+    }
+
+    // 3. Persist to Server API
+    try {
+      await fetch(`${API_BASE}/admin/hero-ads/${id}`, {
+        method: 'DELETE',
+      });
+    } catch {
+      // ignore
+    }
+
     return { success: true };
   },
 };

@@ -204,6 +204,17 @@ function persistAdminConfigToFirestore(cfg: { password: string; autoApprove: boo
   });
 }
 
+function persistHeroAdsToFirestore(data: { settings: HeroAdSettings; ads: HeroAd[] }) {
+  if (!firestoreDb) return;
+  const clean = sanitizeForFirestoreServer(data);
+  setDoc(doc(firestoreDb, 'hero_ads', 'main'), {
+    ...clean,
+    updatedAt: new Date().toISOString(),
+  }, { merge: true }).catch((err) => {
+    console.warn('[Firestore] persist hero ads error:', err);
+  });
+}
+
 // Initial Seed Data - Empty for fresh live launch (customers will add real ads)
 const DEFAULT_LISTINGS: Listing[] = [];
 
@@ -421,6 +432,7 @@ function saveStoredHeroAdsData(data: { settings: HeroAdSettings; ads: HeroAd[] }
   } catch (err) {
     console.error('Error saving hero ads file', err);
   }
+  persistHeroAdsToFirestore(data);
 }
 
 let listingsCache = getStoredListings();
@@ -1565,6 +1577,23 @@ Price: Rs ${price ? Number(price).toLocaleString('en-LK') : 'Negotiable'}. Price
       }
     } catch (e) {
       console.warn('[Firestore] Initial sync warning:', e);
+    }
+
+    try {
+      const heroSnap = await getDoc(doc(firestoreDb, 'hero_ads', 'main'));
+      if (heroSnap.exists()) {
+        const remoteHero = heroSnap.data() as { settings?: HeroAdSettings; ads?: HeroAd[] };
+        if (remoteHero && Array.isArray(remoteHero.ads) && remoteHero.ads.length > 0) {
+          heroAdsDataCache = {
+            settings: remoteHero.settings || DEFAULT_HERO_SETTINGS,
+            ads: remoteHero.ads,
+          };
+          saveStoredHeroAdsData(heroAdsDataCache);
+          console.log(`[Firestore] Initialized server hero ads cache with ${heroAdsDataCache.ads.length} ads`);
+        }
+      }
+    } catch (e) {
+      console.warn('[Firestore] Initial hero ads sync warning:', e);
     }
   }
 
